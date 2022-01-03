@@ -5,4 +5,8 @@ pyat/mode_grad.py
 **/*.prt
 **/*.swp
 
+**/*.flp
+**/*.mod
 
+*.ipynb_checkpoints
+*.DS_Store

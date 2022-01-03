@@ -1069,17 +1069,43 @@ def read_modes(**kwargs):
      Modes.z          sample depths for modes
      Modes.phi        modes
 
-     Modes.Top.bc
-     Modes.Top.cp
-     Modes.Top.cs
-     Modes.Top.rho
-     Modes.Top.depth
+     Modes.Top.bc     boundary condition
+     (I'm just guessing bc is boundary condition is that right? - John)
+        'V' VACUUM above top.
+        'A' ACOUSTO-ELASTIC half-space.
+            Requires another line as described in
+            block (4a). 
+        'R' Perfectly RIGID.
+        'F' Reflection coefficient from a FILE
+            (available in KRAKENC only). Requires
+            additional lines as described in
+            block (4c).
+        'S' for Soft-boss Twersky scatter.
+        'H' for Hard-boss Twersky scatter.
+        'T' for Soft-boss Twersky scatter, amplitude
+            only.
+        'I' for Hard-boss Twersky scatter, amplitude
+            only. The Twersky scatter options require
+            another line as described in block
+            (4c). Mnemonically, T, I options are one
+            letter after S, H in the alphabet. Current
+            wisdom is that option T is most
+            appropriate for ice scatter.
 
-     Modes.Bot.bc
-     Modes.Bot.cp
-     Modes.Bot.cs
-     Modes.Bot.rho
-     Modes.Bot.depth
+        For open ocean problems option 'V' should be
+        used for the top BC.  The Twersky options
+        are intended for under-ice modeling.
+
+     Modes.Top.cp     P-wave speed [m/s]
+     Modes.Top.cs     S-wave speed [m/s]
+     Modes.Top.rho    density [g/cm3]
+     Modes.Top.depth  depth [m]
+
+     Modes.Bot.bc     boundary condition (see Modes.Top.bc)
+     Modes.Bot.cp     P-wave speed [m/s]
+     Modes.Bot.cs     S-wave speed [m/s]
+     Modes.Bot.rho    density [g/cm3]
+     Modes.Bot.depth  depth [m]
 
      Modes.N          Number of depth points in each medium
      Modes.Mater      Material type of each medium (acoustic or elastic)
