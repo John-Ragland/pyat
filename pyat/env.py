@@ -113,9 +113,13 @@ class HS:
         self.betaI = np.array(betaI)
         
 class BotBndry:
-    def __init__(self, Opt, Hs, depth=[], betaI=[0], ):
+    def __init__(self, Opt, Hs, sigma=0.0, depth=[], betaI=[0], ):
+        """
+        Sigma is RMS roughness of the interface that it bounds from below
+        """
         self.Opt = Opt # 'A' for analytic or 'CVW' for interpolated ssp
         self.hs = Hs
+        self.sigma = sigma
 
 class TopBndry:
     def __init__(self, Opt, depth=[]):

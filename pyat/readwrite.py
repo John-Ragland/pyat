@@ -222,7 +222,7 @@ def write_env( envfil, model, TitleEnv, freq, ssp, bdry, pos, beam, cint, RMax, 
 
 
     f.write('\'' + TitleEnv + '\' ! Title \r\n')
-    f.write('{:8.2f}'.format(freq) +' \t \t \t ! Frequency (Hz) \r\n')
+    f.write('{:8.6f}'.format(freq) +' \t \t \t ! Frequency (Hz) \r\n')
     f.write('{:5d}'.format(ssp.NMedia)+ ' \t \t \t ! NMedia \r\n')
     f.write('\'' + bdry.Top.Opt + '\''+ ' \t \t \t ! Top Option \r\n')
 
@@ -257,7 +257,7 @@ def write_env( envfil, model, TitleEnv, freq, ssp, bdry, pos, beam, cint, RMax, 
                 '/ \t ! z c cs rho \r\n')
 
     # lower halfspace
-    f.write('\''+bdry.Bot.Opt + '\'' + ' {:6.2f}'.format(ssp.sigma[1]) + '  \t \t ! Bottom Option, sigma\r\n') # ssp.sigma( 2 ) )
+    f.write('\''+bdry.Bot.Opt + '\'' + ' {:6.2f}'.format(bdry.Bot.sigma) + '  \t \t ! Bottom Option, sigma\r\n') # ssp.sigma( 2 ) )
 
     fmtr = {'all': lambda x: ' {:6.2f}'.format(float(x))}#, 'void': lambda x: ''}
     a = np.array([])
@@ -351,11 +351,11 @@ def write_bathy( btyfile, range_depth_array):
     if btyfile[-3:] != 'bty':
         btyfile += '.bty'
     with open(btyfile, 'w') as f:
-        f.write('CS\r\n') 
-        f.write(str(range_depth_array.shape[0])+'\r\n')
+        f.write('C\n') 
+        f.write(str(range_depth_array.shape[0])+'\n')
         for row in range(range_depth_array.shape[0]):
             vals = range_depth_array[row,:]
-            f.write('  ' + str(vals[0]) + ' ' + str(vals[1]) + '\n')
+            f.write(str(vals[0]) + ' ' + str(vals[1]) + '\n')
     return
 
 def write_bell(f, beam):
@@ -885,7 +885,7 @@ def read_env_core( envfil ):
         Loc = [0] * NMedia
         ssp_Npts = [0]*NMedia
         ssp_N = [0]*NMedia
-        ssp_sigma = [0]*(NMedia+1)
+        ssp_sigma = [0]*(NMedia)
         for medium in range(NMedia):
             if ( medium == 1 ):
                 Loc[medium] = 0
@@ -972,13 +972,19 @@ def read_env_core( envfil ):
         # read in next line
         tmp = lines[line_ind]
         line_ind += 1
-        BotOpt   = re.findall('\'(.*)\'', tmp)[0]
+        parts = tmp.split()
+        BotOpt = parts[0].strip("'")
+        if len(parts) > 1:
+            bot_sigma = float(parts[1])
+        else:
+            bot_sigma = 0.0 # no roughness
 
         if len(BotOpt) < 5:
             BotOpt = BotOpt + ' '*(4-len(BotOpt)) # whitespace pad to 4 characters
         # convert the deprecated '*' option to '~'
         bdry.Bot.Opt = BotOpt.replace('*', '~')
         bdry.Bot.BC    = bdry.Bot.Opt[0]
+        bdry.Bot.sigma = bot_sigma
 
         ## TRANSLATE TOPBOT IN BELLHOP DIR
         [ bdry.Bot.cp, bdry.Bot.cs, bdry.Bot.rho, holder, bdry.Bot.hs, line_ind ] = topbot( lines, line_ind, freq, bdry.Bot.BC, AttenUnit )
@@ -1375,8 +1381,8 @@ def read_arrivals_asc_alt(fname, narrmx=200):
                     loc_arrivals = [] #arrivals for this specific sd, rd, and rr
                     for arr in range(num_arrivals):
                         tmp = lines[line_index].split()
-                        amp = my_float(tmp[0])*np.exp(complex(0,1)*my_float(tmp[1])*np.pi/180)
-                        delay = complex(my_float(tmp[2]), my_float(tmp[3]))
+                        amp = my_float(tmp[0])*np.exp(1j*my_float(tmp[1])*np.pi/180)
+                        delay = my_float(tmp[2]) + 1j*my_float(tmp[3])
                         src_ang = my_float(tmp[4])
                         rec_ang = my_float(tmp[5])
                         num_top_bnc = int(tmp[6])
@@ -1386,7 +1392,7 @@ def read_arrivals_asc_alt(fname, narrmx=200):
                     arrival_list.append(loc_arrivals)
     return arrival_list, pos
 
-def plotray(fname):
+def plotray(fname, fig=None, axis=None, max_num_bncs=100):
     """
     Translation of plotray to Python
     Hunter Akins 2021
@@ -1418,8 +1424,8 @@ def plotray(fname):
         deptht = float(lines[4])
         depthb = float(lines[5])
 
-
-        fig, axis = plt.subplots(1,1)
+        if axis is None:
+            fig, axis = plt.subplots(1,1)
         axis.set_ylim([0, depthb+50])
         axis.invert_yaxis()
 
@@ -1446,14 +1452,17 @@ def plotray(fname):
                         counter +=1
 
                     num_bnc = num_top_bnc+ num_bot_bnc
-                    if num_top_bnc == 0 and num_bot_bnc==0: 
-                        axis.plot(x,y, color='k')
-                    elif num_bnc > 1:
-                        axis.plot(x,y, color='r', alpha=.85)
-                    elif num_top_bnc == 1:
-                        axis.plot(x,y, color='b', alpha=.85)
-                    elif num_bot_bnc == 1:
-                        axis.plot(x,y, color='tab:brown', alpha=.85)
+                    if num_bnc > max_num_bncs:
+                        pass
+                    else:
+                        if num_top_bnc == 0 and num_bot_bnc==0: 
+                            axis.plot(x,y, color='k')
+                        elif num_bnc > 1:
+                            axis.plot(x,y, color='r', alpha=.85)
+                        elif num_top_bnc == 1:
+                            axis.plot(x,y, color='b', alpha=.85)
+                        elif num_bot_bnc == 1:
+                            axis.plot(x,y, color='tab:brown', alpha=.85)
                     line_ind += 1
                     
         return fig, axis
